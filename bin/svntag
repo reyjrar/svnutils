@@ -1,0 +1,104 @@
+#!/bin/bash
+
+PWD=`pwd`;
+SVN=/usr/bin/svn
+
+#
+# Simple Test for Source Control
+$SVN st 2> /dev/null;
+rc=$?;
+
+if [ "$rc" -ne "0" ]; then
+	echo "$PWD is not under source control!";
+	exit 1;
+fi;
+
+#
+# Check for Changes.
+chg=`$SVN st |grep -v '^\?'|wc -c`;
+
+if [ "$chg" -gt "0" ]; then
+	echo "Please commit all changes before tagging.";
+	exit 1;
+fi;
+
+#
+# Grab the SVN URL:
+SVNURL=`svn info |grep '^URL' |grep 'trunk' |sed 's/URL\: //'`;
+
+if [ `echo $SVNURL|wc -c` -eq "0" ]; then
+	echo "Your repository might be incorrectly configured.";
+	echo " Make sure that there is a trunk/ and tags/ directory.";
+	exit 1;
+fi;
+
+#
+# Strip to the trunk.
+SVNURL=`echo $SVNURL| sed 's/trunk\/.*/trunk/' |sed 's/\/trunk$//'`;
+
+TRUNKURL="$SVNURL/trunk";
+TAGURL="$SVNURL/tags";
+
+#
+# List the releases;
+$SVN ls $TAGURL 2>&1 > /dev/null
+rc=$?;
+
+#
+# Make the tag directory if necessary
+if [ "$rc" -ne "0" ]; then
+	echo "creating tags directory at repositoy root";
+
+	$SVN mkdir $TAGURL -m 'Autocreated by svntag.';
+	rc=$?;
+
+	if [ "$rc" -ne "0" ]; then
+		echo "Failure creating tag directory: $TAGDIR";
+		exit 1;
+	fi;
+fi;
+
+#
+# Check for releases
+RELEASES=`$SVN ls $TAGURL|grep 'release-'| sed 's/\///'| cut -d\- -f2`;
+VERSION=1;
+
+if [ "x$RELEASES" == "x" ]; then
+	echo "First Revision, skipping manual configuration.";
+	UPDATE="Initial";
+else
+	#
+	# Configure
+
+	for release in $RELEASES; do
+		# Find Max Version
+		if [ "$release" -gt "$VERSION" ]; then
+			VERSION=$release;
+		fi;
+	done;
+
+	echo "Current release is $VERSION";
+	# Increment Version
+	(( VERSION++ ));
+fi;
+
+#
+# Actually create the tags
+echo -n "Going to create revision: $VERSION, conitinue? [y/N] ";
+read user_input;
+
+if [ "$user_input" == "y" ] || [ "$user_input" == "Y" ]; then
+	relmsg="$UPDATE Release $VERSION";
+	echo -n "commit message (enter for none): ";
+	read user_input;
+	if [ `echo "$user_input"|wc -c` -gt "1" ]; then	
+		relmsg="$relmsg : $user_input";
+	fi;
+	$SVN cp $TRUNKURL $TAGURL/release-$VERSION -m "$relmsg";
+	exit $?;
+fi;
+
+#
+# Default Exit
+echo "exitted without tagging.";
+exit 1;

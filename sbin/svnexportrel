@@ -1,0 +1,59 @@
+#!/bin/bash
+
+SVNURL=$1;
+TARGET=$2;
+SVN=/usr/bin/svn
+
+TAGURL="$SVNURL/tags";
+
+#
+# List the releases;
+$SVN ls $TAGURL 2>&1 > /dev/null
+rc=$?;
+
+#
+# Make the tag directory if necessary
+if [ "$rc" -ne "0" ]; then
+	echo "Tags not configured for $SVNURL";
+	exit 1;
+fi;
+
+#
+# Check for releases
+RELEASES=`$SVN ls $TAGURL|grep 'release-'| sed 's/\///'| cut -d\- -f2`;
+RELEASE=1;
+
+if [ "x$RELEASES" == "x" ]; then
+	echo "No Releases for $SVNURL";
+	exit 1;
+fi;
+
+for version in $RELEASES; do
+	# Find Max Version
+	if [ "$version" -gt "$RELEASE" ]; then
+		RELEASE=$version;
+	fi;
+done;
+
+dir=`dirname $TARGET`;
+name=`basename $TARGET`;
+
+if [ ! -d "$dir" ]; then
+	echo "Target's parent directory does not exist!";
+	exit 1;
+fi;
+
+# Move into the "Release" Directory
+cd $dir;
+
+# Clean out the "Target"
+if [ -d "$TARGET" ]; then
+	serial=`date +'%Y%m%d%H%M'`;
+	# Archive the old version
+	/bin/tar -zcf "/tmp/$name-$serial.tar.gz" $name;
+	# Remove the old version
+	/bin/rm -rf $name
+fi;
+# Export the New Version
+$SVN export "$TAGURL/release-$RELEASE" $name;
+echo $RELEASE > "$TARGET/RELEASE";

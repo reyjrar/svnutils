@@ -1,0 +1,53 @@
+#!/bin/bash
+
+SVN=/usr/bin/svn
+
+SVNURL=$1;
+TARGET=$2;
+TAGURL="$SVNURL/tags";
+
+# Make sure there's a deployment target
+SITEDIR=`dirname $TARGET`;
+if [ ! -d "$SITEDIR" ]; then
+	echo "$SITEDIR does not exist";
+	exit 1;
+fi;
+
+#
+# Simple Test for Source Control
+RELEASES=`$SVN ls $TAGURL 2>/dev/null |grep 'release-'| sed 's/\///'| cut -d\- -f2`;
+rc=$?;
+
+if [ "$rc" -ne "0" ]; then
+	echo "$URL does not have a tags directory!";
+	exit 1;
+fi;
+
+CURRENT=0;
+if [ -f "$TARGET/RELEASE" ]; then
+	CURRENT=`cat $TARGET/RELEASE`;
+fi;
+
+
+#
+# Check for releases
+RELEASE=0;
+
+if [ "x$RELEASES" == "x" ]; then
+	echo "No Releases for $SVNURL!";
+	exit 1;
+else
+	for version in $RELEASES; do
+		# Find Max Version
+		if [ "$version" -gt "$RELEASE" ]; then
+			RELEASE=$version;
+		fi;
+	done;
+fi;
+
+if [ "$RELEASE" -gt "$CURRENT" ]; then
+	exit 0;
+fi;
+#
+# Same Version
+exit 1;
