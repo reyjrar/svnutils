@@ -10,7 +10,7 @@ sbin/svncheckrel <SVN Project Root URL> <Deployment Target>
   - Exit Code is Success when the Release is ready to Deploy
   - Exit Code is Failure when the Release is already Deployed
 
-sbin/svncheckrel <SVN Project Root URL> <Deployment Target>
+sbin/svnexportrel <SVN Project Root URL> <Deployment Target>
   Use to deploy a Release to Target (does not check)
   - Copies Target to Target.old
   - SVN Exports the Latest Release
