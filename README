@@ -1,0 +1,34 @@
+bin/svntag
+  
+  Use inside a Subversion Working Directory with all changes checked in.
+  - Automatically finds the "trunk"
+  - Automatically creates the "tags" directory at the project root
+  - Creates a tag "tags/release-X" where X is the next integer
+
+sbin/svncheckrel <SVN Project Root URL> <Deployment Target>
+  Use to check is there's a new Release to deploy to Target
+  - Exit Code is Success when the Release is ready to Deploy
+  - Exit Code is Failure when the Release is already Deployed
+
+sbin/svncheckrel <SVN Project Root URL> <Deployment Target>
+  Use to deploy a Release to Target (does not check)
+  - Copies Target to Target.old
+  - SVN Exports the Latest Release
+  - Creates RELEASE in Target for svncheckrel to use
+
+puppet.subversion
+
+  Puppet Module using these tools for automatic deployment.
+
+  use:
+  import "subversion"
+
+  node web_server {
+	include subversion
+
+  	subversion::deploy {
+		svnurl => "svn+ssh://svn.example.com/repo/projects/web-application",
+		target => "/var/www/web-application",
+		notify => Service['httpd']
+	}
+  }
